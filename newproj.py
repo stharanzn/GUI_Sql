@@ -20,6 +20,9 @@ entryback="white"
 toshow='*'
 databasename='mysql'
 temptab = None
+templisttab = None
+listbuttons = []
+
 
 class loginwindow():
     def __init__(self):
@@ -71,22 +74,45 @@ class listtab():
     def __init__(self, mycursor, tablename):
         self.cursor = mycursor
         self.tablename= tablename
-        self.pw = PanedWindow(orient = 'horizontal')
-        self.pw.grid(column = 0, row = 1100, columnspan = 10)
-        self.pw.config(background = themeback)
+        self.pww = PanedWindow(orient = 'horizontal')
+        self.pww.grid(column = 0, row = 110, columnspan = 10,sticky=W)
+        self.pww.config(background = themeback)
         self.showlist(self.cursor,self.tablename)
 
+    def editlist(self,row,column,buttonnumber,boxname):
+        global listbuttons
+        labels = []
+        listbuttons[buttonnumber].destroy()
+        labeltext = StringVar()
+        labeltext.set(f'edit {boxname}')
+        lab = Entry(self.pww, text = labeltext, width = 12, bg = entryback)
+        lab.grid(column = column, row = row+2)
+        labels.append(lab)
+
     def showlist(self, cursor, tablename):
+        global listbuttons
         cursor.execute(f'select * from {tablename}')
         tablelist = cursor.fetchall()
         cursor.execute(f'desc {tablename}')
         tabname = cursor.fetchall()
-        print(tabname)
         cno = 0
-        rno = 0
+        rno = 1
+        for i in range(len(tabname)):
+            Label(self.pww,text = tabname[i][0],fg = fontcolor, bg = themeback, font = 'Agency_fb 12 bold').grid(column = cno,row = 0)
+            cno +=1
         listbuttons = []
-        print(tablelist)
-        #for i in range(len(tablelist)):
+        bno = 0
+        btn = None
+        for i in range(len(tablelist)):
+            for j in range(len(tabname)):
+                if cno >= len(tabname):
+                    cno = 0
+                    rno +=1
+                btn = Button(self.pww, text = tablelist[i][j],width = 10,command = lambda i=i,j=j,c=bno:self.editlist(i,j,c,tablelist[i][j]))
+                btn.grid(column = cno, row = rno)
+                listbuttons.append(btn)
+                bno+=1
+                cno +=1
             
 
 class tablewin():
@@ -94,7 +120,7 @@ class tablewin():
         self.database = database
         self.cursor = mycursor
         self.pw=PanedWindow(orient = 'horizontal')
-        self.pw.grid(column = 0, row = 1010, columnspan = 4)
+        self.pw.grid(column = 0, row = 100, columnspan = 4)
         self.pw.config(background = themeback)
         self.cno = 0
         self.rno = 0
@@ -103,15 +129,23 @@ class tablewin():
     def databaseview(self,cursor):
         databasewin(cursor)
 
+    def callinglisttab(self,cursor,tablename):
+        global templisttab
+        if templisttab == None:
+            pass
+        else:
+            templisttab.pww.destroy()
+        templisttab = listtab(cursor, tablename)
+
     def showtable(self):
         self.cursor.execute('use {}'.format(self.database))
         self.cursor.execute("show tables")
         tables = self.cursor.fetchall()
 
-        Label(self.pw, text = "Database:- " + self.database + '\n',bg = fontback , fg = fontcolor, font = "Agency_fb 12 bold").grid(column = 0, row = 0, columnspan = 7)
+        Label(self.pw, text = "\n\nDatabase:- " + self.database + '\n',bg = fontback , fg = fontcolor, font = "Agency_fb 12 bold").grid(column = 0, row = 0, columnspan = 7)
 
         if len(tables) == 0:
-            Label(self.pw,text = "No tables to show in this database ",fg = fontcolor, bg = fontback, font = "Agency_fb 12 bold").grid(column = 1,row = 2,columnspan = 3)
+            Label(self.pw,text = "\nNo tables to show in this database ",fg = fontcolor, bg = fontback, font = "Agency_fb 12 bold").grid(column = 1,row = 2,columnspan = 3)
         
         else:
             tablebuttons = []
@@ -121,7 +155,7 @@ class tablewin():
                 if self.cno > 6 :
                     self.cno = 0
                     self.rno +=1
-                tablebutton = Button(self.pw, text = tables[i][0],width = 15, command = lambda i = i:listtab(self.cursor, tables[i][0])).grid(column = self.cno, row = self.rno)
+                tablebutton = Button(self.pw, text = tables[i][0],width = 15, command = lambda i = i:self.callinglisttab(self.cursor, tables[i][0])).grid(column = self.cno, row = self.rno)
                 tablebuttons.append(tablebutton)
                 self.cno += 2
 
@@ -150,19 +184,22 @@ class databasewin():
         return cleardatabase
 
     def buttonpressed(self,selecteddatabase):
-        global temptab
+        global temptab,templisttab
         if self.tableopen == False:
             self.tableopen = True
         else:
+            if not templisttab:
+                pass
+            else:
+                templisttab.pww.destroy()
             temptab.pw.destroy()
-
+        
         temptab = tablewin(selecteddatabase,self.cursor)
 
-    def logout(self,window):
+    def exit(self,window):
         global conn
         conn.close()
         window.destroy()
-        loginwindow()
     
     def window(self):
         datawindow=Tk()
@@ -172,7 +209,7 @@ class databasewin():
         if self.datalen == 0:
             Label(datawindow,text="There are no databases to work on. \n To make a new database click on the button below",fg=fontcolor,bg=fontback,font="Agency_fb 20 bold").grid(column=0,row=0,columnspan=self.datalen)
         else:
-            Label(datawindow,text="Select a database to work on \n",fg=fontcolor,bg=fontback,font="Agency_fb 20 bold").grid(column=0,row=0,columnspan=self.datalen)
+            Label(datawindow,text="\nSelect a database to work on \n",fg=fontcolor,bg=fontback,font="Agency_fb 20 bold").grid(column=0,row=0,columnspan=self.datalen)
             buttons = []
             cno = 0
             rno = 2
@@ -184,7 +221,7 @@ class databasewin():
                 button.grid(column = cno, row = 2)
                 cno += 1
                 buttons.append(button)
-        Button(datawindow, text = "Logout",width = 15,command = lambda: self.logout(datawindow)).grid(column = int(cno/2), row = 100)
+        Button(datawindow, text = "Exit",width = 15,command = lambda: self.exit(datawindow)).grid(column = int(cno/2), row = 200)
         
 
         
