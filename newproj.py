@@ -11,6 +11,7 @@ import math
 import random
 import mysql.connector as mys
 from time import sleep
+edittab = False
 
 #variables
 themeback="black"
@@ -22,6 +23,8 @@ databasename='mysql'
 temptab = None
 templisttab = None
 listbuttons = []
+labels = []
+btn =  []
 
 
 class loginwindow():
@@ -79,15 +82,47 @@ class listtab():
         self.pww.config(background = themeback)
         self.showlist(self.cursor,self.tablename)
 
+    def savechanges(self,label,button):
+        newvalue = label.get()
+        try:
+            button.destroy()
+        except:
+            pass
+        label.destroy()        
+        print(newvalue)
+
     def editlist(self,row,column,buttonnumber,boxname):
-        global listbuttons
-        labels = []
-        listbuttons[buttonnumber].destroy()
+        global listbuttons,edittab,labels,btn
+        if edittab == True:
+            labels[0].destroy()
+            try:
+                btn[0].destroy()
+            except:
+                pass
+                   
+        if edittab == False:
+            edittab = True
+        #listbuttons[buttonnumber].destroy()
         labeltext = StringVar()
-        labeltext.set(f'edit {boxname}')
-        lab = Entry(self.pww, text = labeltext, width = 12, bg = entryback)
+        labeltext.set(boxname)
+        lab = Entry(self.pww, text = labeltext, width = 17, bg = entryback)
         lab.grid(column = column, row = row+2)
-        labels.append(lab)
+        
+        but = Button(self.pww, text = 'Modify Value', width = 15, command = lambda : self.savechanges(labels[0],but))
+        but.grid(column = 0, row = 210)
+
+        if len(labels) >= 1:
+            labels[0] = lab
+            
+        else:
+            labels.append(lab)
+            
+        if len(btn) >= 1:
+            btn[0].destroy()
+            btn[0] =  but
+
+        else:
+            btn.append(but)
 
     def showlist(self, cursor, tablename):
         global listbuttons
@@ -100,7 +135,7 @@ class listtab():
         for i in range(len(tabname)):
             Label(self.pww,text = tabname[i][0],fg = fontcolor, bg = themeback, font = 'Agency_fb 12 bold').grid(column = cno,row = 0)
             cno +=1
-        listbuttons = []
+        #listbuttons = []
         bno = 0
         btn = None
         for i in range(len(tablelist)):
@@ -108,9 +143,9 @@ class listtab():
                 if cno >= len(tabname):
                     cno = 0
                     rno +=1
-                btn = Button(self.pww, text = tablelist[i][j],width = 10,command = lambda i=i,j=j,c=bno:self.editlist(i,j,c,tablelist[i][j]))
+                btn = Button(self.pww, text = tablelist[i][j],width = 15,command = lambda i=i,j=j,c=bno:self.editlist(i,j,c,tablelist[i][j]))
                 btn.grid(column = cno, row = rno)
-                listbuttons.append(btn)
+                #listbuttons.append(btn)
                 bno+=1
                 cno +=1
             
@@ -126,8 +161,8 @@ class tablewin():
         self.rno = 0
         self.showtable()
     
-    def databaseview(self,cursor):
-        databasewin(cursor)
+##    def databaseview(self,cursor):
+##        databasewin(cursor)
 
     def callinglisttab(self,cursor,tablename):
         global templisttab
@@ -148,7 +183,7 @@ class tablewin():
             Label(self.pw,text = "\nNo tables to show in this database ",fg = fontcolor, bg = fontback, font = "Agency_fb 12 bold").grid(column = 1,row = 2,columnspan = 3)
         
         else:
-            tablebuttons = []
+            #tablebuttons = []
             self.cno = 0
             self.rno =1
             for i in range(0,len(tables)):
@@ -156,7 +191,7 @@ class tablewin():
                     self.cno = 0
                     self.rno +=1
                 tablebutton = Button(self.pw, text = tables[i][0],width = 15, command = lambda i = i:self.callinglisttab(self.cursor, tables[i][0])).grid(column = self.cno, row = self.rno)
-                tablebuttons.append(tablebutton)
+                #tablebuttons.append(tablebutton)
                 self.cno += 2
 
 class databasewin():
